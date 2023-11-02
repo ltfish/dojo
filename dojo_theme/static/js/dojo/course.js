@@ -62,7 +62,7 @@ function form_fetch_and_show_raw(name, endpoint, method, success_message) {
             data: form_data,
             processData: false,
             contentType: false
-        }).then(result => {
+        }).done(result => {
            if (result.success) {
                results.html(success_template);
                results.find("#message").text(success_message);
@@ -70,6 +70,13 @@ function form_fetch_and_show_raw(name, endpoint, method, success_message) {
                results.html(error_template);
                results.find("#message").html(result.error);
            }
+        }).fail(result => {
+            results.html(error_template);
+            if (result.status == 413) {
+                results.find("#message").html("Failed to add this entry. Your file is too large.");
+            } else {
+                results.find("#message").html("Failed to add this entry: HTTP error code " + result.status + ". Please report this error.");
+            }
         });
     });
 }
