@@ -215,11 +215,12 @@ def view_course(dojo, resource=None):
             abort(403)
         user = Users.query.filter_by(id=request.args.get("user")).first_or_404()
         name = f"{user.name}'s"
-        is_admin = get_current_user().type == "admin"
     else:
         user = get_current_user()
         name = "Your"
-        is_admin = user.type == "admin"
+
+    current_user = get_current_user()
+    is_admin = False if current_user is None else (current_user.type == "admin")
 
     grades = {}
     identity = {}
