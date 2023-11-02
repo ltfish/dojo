@@ -255,7 +255,7 @@ def view_course(dojo, resource=None):
 
     # select all active CTFs
     ctfs = []
-    for approved_ctf in ApprovedCTFs.query.filter(ApprovedCTFs.flag_submission_due <= datetime.datetime.now()).all():
+    for approved_ctf in ApprovedCTFs.query.filter(ApprovedCTFs.flag_submission_due >= datetime.datetime.now()).all():
         ctf = {
             "id": approved_ctf.ctf_id,
             "name": approved_ctf.name,
