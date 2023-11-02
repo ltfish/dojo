@@ -417,6 +417,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         fortune
         zsh
         zip
+        p7zip-full
 EOF
 
 ################################################################################

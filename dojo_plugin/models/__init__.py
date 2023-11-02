@@ -622,3 +622,46 @@ class DiscordUsers(db.Model):
     user = db.relationship("Users")
 
     __repr__ = columns_repr(["user", "discord_id"])
+
+
+class ApprovedCTFs(db.Model):
+    __tablename__ = 'dojo_approved_ctfs'
+
+    ctf_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    name = db.Column(db.String(128))
+    start_time = db.Column(db.DateTime, index=True)
+    end_time = db.Column(db.DateTime, index=True)
+    flag_submission_due = db.Column(db.DateTime)
+
+
+class CTFWriteupSubmission(db.Model):
+    __tablename__ = "dojo_ctf_writeup_submissions"
+
+    submission_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE")
+    )
+    ctf_id = db.Column(db.Integer, db.ForeignKey("dojo_approved_ctfs.ctf_id", ondelete="CASCADE"))
+    team_name = db.Column(db.String(128), index=True)
+    challenge_name = db.Column(db.String(128))
+    flag = db.Column(db.String(256))
+    solved_after_ctf = db.Column(db.Boolean)
+    writeup_path = db.Column(db.String(256))
+
+    user = db.relationship("Users")
+    ctf = db.relationship("ApprovedCTFs")
+    score = db.relationship("CTFWriteupSubmissionScore", back_populates="submission")
+
+    __repr__ = columns_repr(["submission_id", "user", "dojo_approved_ctfs"])
+
+
+class CTFWriteupSubmissionScore(db.Model):
+    __tablename__ = "dojo_ctf_writeup_submission_scores"
+
+    score_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    submission_id = db.Column(
+        db.Integer, db.ForeignKey("dojo_ctf_writeup_submissions.submission_id", ondelete="CASCADE")
+    )
+    score = db.Column(db.Integer)
+
+    submission = db.relationship("CTFWriteupSubmission", back_populates="score")

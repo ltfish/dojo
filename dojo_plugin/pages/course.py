@@ -1,6 +1,9 @@
 import collections
 import datetime
+import os
+import time
 
+import dateparser
 from flask import Blueprint, render_template, request, abort
 from sqlalchemy import and_, cast
 from CTFd.models import db, Challenges, Solves, Users
@@ -8,9 +11,11 @@ from CTFd.utils import get_config
 from CTFd.utils.user import get_current_user, is_admin
 from CTFd.utils.decorators import authed_only, admins_only
 from CTFd.cache import cache
+from CTFd.plugins import bypass_csrf_protection
+from werkzeug.utils import secure_filename
 
 from .discord import get_discord_user
-from ..models import DiscordUsers, DojoChallenges, DojoUsers, DojoStudents, DojoModules, DojoStudents
+from ..models import DiscordUsers, DojoChallenges, DojoUsers, DojoStudents, DojoModules, DojoStudents, ApprovedCTFs, CTFWriteupSubmission
 from ..utils import module_visible, module_challenges_visible, DOJOS_DIR, is_dojo_admin
 from ..utils.dojo import dojo_route
 from .writeups import WriteupComments, writeup_weeks, all_writeups
@@ -210,9 +215,11 @@ def view_course(dojo, resource=None):
             abort(403)
         user = Users.query.filter_by(id=request.args.get("user")).first_or_404()
         name = f"{user.name}'s"
+        is_admin = get_current_user().type == "admin"
     else:
         user = get_current_user()
         name = "Your"
+        is_admin = user.type == "admin"
 
     grades = {}
     identity = {}
@@ -246,7 +253,123 @@ def view_course(dojo, resource=None):
         else:
             setup["join_discord"] = "incomplete"
 
-    return render_template("course.html", name=name, **grades, **identity, **setup, user=user, dojo=dojo)
+    # select all active CTFs
+    ctfs = []
+    for approved_ctf in ApprovedCTFs.query.filter(ApprovedCTFs.flag_submission_due <= datetime.datetime.now()).all():
+        ctf = {
+            "id": approved_ctf.ctf_id,
+            "name": approved_ctf.name,
+        }
+        ctfs.append(ctf)
+
+    return render_template("course.html", name=name, **grades, **identity, **setup, user=user, dojo=dojo, approved_ctfs=ctfs, admin=is_admin)
+
+
+@course.route("/submit_ctf_writeup", methods=["POST"])
+@bypass_csrf_protection
+@authed_only
+def submit_ctf_writeup():
+    BASE_DIR = "/var/uploads"
+
+    user = get_current_user()
+
+    ctf_id = request.form.get("ctfs", None)
+    team_name = request.form.get("team-name", "")
+    challenge_name = request.form.get("challenge-name", "")
+    flag = request.form.get("flag", "")
+    solved_after_ctf = request.form.get("solved-after_ctf", False)
+    writeup = request.files.get("writeup-zip", None)
+
+    # TODO: Sanity checks
+    if not ctf_id:
+        return {"success": False, "error": "Invalid CTF ID"}
+    try:
+        ctf_id = int(ctf_id)
+    except ValueError:
+        return {"success": False, "error": "Invalid CTF ID"}
+
+    team_name = team_name.strip(" ")
+    if not team_name:
+        return {"success": False, "error": "Invalid team name"}
+
+    challenge_name = challenge_name.strip(" ")
+    if not challenge_name:
+        return {"success": False, "error": "Invalid challenge name"}
+
+    flag = flag.strip(" ")
+    if not flag:
+        return {"success": False, "error": "Invalid flag"}
+
+    if solved_after_ctf is not False:
+        solved_after_ctf = True
+
+    if not writeup or not writeup.filename:
+        return {"success": False, "error": "Please upload a writeup file"}
+
+    # has a writeup been submitted for this challenge?
+    submitted = CTFWriteupSubmission.query.filter_by(user=user, ctf_id=ctf_id, challenge_name=challenge_name).count()
+    if submitted > 0:
+        return {"success": False, "error": "You have already submitted a writeup for this challenge"}
+
+    allowed_suffix = [
+        ".pdf",
+        ".zip",
+        ".tar",
+        ".tar.gz",
+        ".7z",
+        ".txt",
+    ]
+    allowed = False
+    for suffix in allowed_suffix:
+        if writeup.filename.endswith(suffix):
+            allowed = True
+    if not allowed:
+        return {
+            "success": False,
+            "error": "The name of your upload file must end with one of the following suffixes: " +
+                     ", ".join(allowed_suffix)
+        }
+
+    # save the uploaded file
+    filename = secure_filename(writeup.filename)
+    filename = f"{user.id}_{int(time.time())}_{filename}"
+    writeup.save(os.path.join(BASE_DIR, filename))
+
+    # create the entry
+    submission = CTFWriteupSubmission(
+        user=user,
+        ctf_id=ctf_id,
+        team_name=team_name,
+        challenge_name=challenge_name,
+        flag=flag,
+        solved_after_ctf=solved_after_ctf,
+        writeup_path=filename,
+    )
+    db.session.add(submission)
+    db.session.commit()
+
+    return {"success": True }
+
+
+@course.route("/dojo/<dojo>/course/add_ctf", methods=["PATCH"])
+@dojo_route
+@admins_only
+def add_approved_ctf(dojo):
+    ctf_name = request.json.get("name")
+    start_time = request.json.get("start_time")
+    end_time = request.json.get("end_time")
+    flag_submission_due = request.json.get("submission_due")
+
+    start_time = dateparser.parse(start_time)
+    end_time = dateparser.parse(end_time)
+    flag_submission_due = dateparser.parse(flag_submission_due)
+
+    ctf = ApprovedCTFs(name=ctf_name, start_time=start_time, end_time=end_time, flag_submission_due=flag_submission_due)
+
+    db.session.add(ctf)
+    db.session.commit()
+
+    return {"success": True}
 
 
 @course.route("/dojo/<dojo>/course/identity", methods=["PATCH"])

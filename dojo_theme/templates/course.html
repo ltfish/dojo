@@ -38,6 +38,10 @@
     <div class="col-md-2 offset-md-1">
       <div class="nav flex-column nav-pills" role="tablist">
         <a class="nav-link active" id="course-syllabus-tab" data-toggle="pill" href="#syllabus" role="tab">Syllabus</a>
+        <a class="nav-link" id="course-ctf-writeup" data-toggle="pill" href="#ctfwriteup" role="tab">CTF Experience</a>
+        {% if admin %}
+            <a class="nav-link" id="course-add-ctf" data-toggle="pill" href="#addctf" role="tab">Add a CTF</a>
+        {% endif %}
         {% if user %}
           <a class="nav-link" id="course-grades-tab" data-toggle="pill" href="#grades" role="tab">Grades</a>
           <a class="nav-link" id="course-identity-tab" data-toggle="pill" href="#identity" role="tab">Identity</a>
@@ -117,6 +121,79 @@
             <li class="setup-{{ join_discord }}">Join the pwn.college Discord server <a href="https://discord.gg/pwncollege">here</a>. This is where you will be able to discuss the challenges with your peers and see official course announcements.</li>
           </ol>
         </div>
+        <div class="tab-pane fade" id="ctfwriteup" role="tabpanel">
+            <form method="post" id="ctfwriteup-form" autocomplete="off">
+                <div class="form-group">
+                    <label for="ctfs">CTF</label>
+                    <select name="ctfs" id="ctfs">
+                        {% for ctf in approved_ctfs %}
+                        <option value="{{ctf.id}}">{{ ctf.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="team-name">Team Name</label>
+                    <input type="text" class="form-control" id="team-name" name="team-name" />
+                </div>
+
+                <div class="form-group">
+                    <label for="challenge-name">Challenge Name</label>
+                    <input type="text" class="form-control" id="challenge-name" name="challenge-name" />
+                </div>
+
+                <div class="form-group">
+                    <label for="flag">Flag</label>
+                    <input type="text" class="form-control" id="flag" name="flag" />
+                </div>
+
+                <div class="form-group">
+                    <label for="solved-after-ctf">Solved After CTF Ends</label>
+                    <input type="checkbox" class="form-check-label" id="solved-after-ctf" name="solved-after-ctf" />
+                </div>
+
+                <div class="custom-file">
+                    <input class="custom-file-input" type="file" id="writeup-zip" name="writeup-zip" />
+                    <label class="custom-file-label" for="writeup-zip">CTF Writeup Upload</label>
+                </div>
+
+                <div id="ctfwriteup-results" class="form-group">
+                </div>
+
+                <div class="form-group">
+                    <input class="btn btn-primary" id="submit" name="submit" type="submit" value="Submit">
+                </div>
+            </form>
+        </div>
+        {% if admin %}
+        <div class="tab-pane fade" id="addctf" role="tabpanel">
+            <form method="post" id="add_ctf-form" autocomplete="off">
+                <div class="form-group">
+                    <label for="ctf-name">CTF Name</label>
+                    <input type="text" class="form-control" name="name" id="ctf-name" />
+                </div>
+                <div class="form-group">
+                    <label for="ctf-start">Starts at</label>
+                    <input type="text" class="form-control" name="start_time" id="ctf-start" />
+                </div>
+                <div class="form-group">
+                    <label for="ctf-end">Ends at</label>
+                    <input type="text" class="form-control" name="end_time" id="ctf-end" />
+                </div>
+                <div class="form-group">
+                    <label for="submission-due">Submission due at</label>
+                    <input type="text" class="form-control" name="submission_due" id="submission-due" />
+                </div>
+
+                <div id="add_ctf-results" class="form-group">
+                </div>
+
+                <div class="form-group">
+                    <input class="btn btn-primary" id="submit" name="submit" type="submit" value="Submit">
+                </div>
+            </form>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

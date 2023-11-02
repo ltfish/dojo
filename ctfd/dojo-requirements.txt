@@ -3,3 +3,4 @@ pyyaml==5.4.1
 schema
 ipython
 flask-shell-ipython
+dateparser
