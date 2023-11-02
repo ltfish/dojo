@@ -663,5 +663,6 @@ class CTFWriteupSubmissionScore(db.Model):
         db.Integer, db.ForeignKey("dojo_ctf_writeup_submissions.submission_id", ondelete="CASCADE")
     )
     score = db.Column(db.Integer)
+    comment = db.Column(db.Text, nullable=True)
 
     submission = db.relationship("CTFWriteupSubmission", back_populates="score")
