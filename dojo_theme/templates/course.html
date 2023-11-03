@@ -38,11 +38,11 @@
     <div class="col-md-2 offset-md-1">
       <div class="nav flex-column nav-pills" role="tablist">
         <a class="nav-link active" id="course-syllabus-tab" data-toggle="pill" href="#syllabus" role="tab">Syllabus</a>
-        <a class="nav-link" id="course-ctf-writeup" data-toggle="pill" href="#ctfwriteup" role="tab">CTF Experience</a>
+        {% if user %}
+            <a class="nav-link" id="course-ctf-writeup" data-toggle="pill" href="#ctfwriteup" role="tab">CTF Experience</a>
         {% if admin %}
             <a class="nav-link" id="course-add-ctf" data-toggle="pill" href="#addctf" role="tab">Add a CTF</a>
         {% endif %}
-        {% if user %}
           <a class="nav-link" id="course-grades-tab" data-toggle="pill" href="#grades" role="tab">Grades</a>
           <a class="nav-link" id="course-identity-tab" data-toggle="pill" href="#identity" role="tab">Identity</a>
         {% endif %}
