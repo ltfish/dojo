@@ -109,7 +109,7 @@ def grade(dojo, users_query):
             5: 12.0,
             6: 20.0,
         }
-        score = scores.get(submissions, 20.0) / 20
+        score = scores.get(submissions, 20.0) / 100
         return score
 
     def result(user_id):
@@ -186,7 +186,6 @@ def grade(dojo, users_query):
 
         grades.append({
             "name": "CTF Experience",
-            "weight": 20,
             "progress": f"{get_ctf_experience_progress(user_id)} / 6",
             "credit": get_ctf_experience_credit(user_id),
         })
