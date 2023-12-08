@@ -92,6 +92,26 @@ def grade(dojo, users_query):
     module_solves = {}
     assigmments = {}
 
+    def get_ctf_experience_progress(user_id) -> int:
+        the_user = Users.query.filter_by(id=user_id).first()
+        submissions = CTFWriteupSubmission.query.filter_by(user=the_user).count()
+        # TODO: cross-check to ensure they are not marked as bad submissions
+        return submissions
+
+    def get_ctf_experience_credit(user_id) -> float:
+        submissions = get_ctf_experience_progress(user_id)
+        scores = {
+            0: 0.0,
+            1: 1.0,
+            2: 2.0,
+            3: 4.0,
+            4: 7.0,
+            5: 12.0,
+            6: 20.0,
+        }
+        score = scores.get(submissions, 20.0) / 20
+        return score
+
     def result(user_id):
         grades = []
 
@@ -163,6 +183,13 @@ def grade(dojo, users_query):
                     progress=assessment.get("progress", {}).get(str(user_id), ""),
                     credit=assessment.get("credit", {}).get(str(user_id), 0.0),
                 ))
+
+        grades.append({
+            "name": "CTF Experience",
+            "weight": 20,
+            "progress": f"{get_ctf_experience_progress(user_id)} / 6",
+            "credit": get_ctf_experience_credit(user_id),
+        })
 
         overall_grade = (
             sum(grade["credit"] * grade["weight"] for grade in grades if "weight" in grade) /
